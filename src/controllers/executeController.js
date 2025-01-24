@@ -1,4 +1,5 @@
 const Environment = require("../models/Environment");
+const History = require("../models/History");
 
 const executeRequest = async (req, res) => {
   const { method, url, headers, body, environmentId } = req.body;
@@ -44,16 +45,21 @@ const executeRequest = async (req, res) => {
     };
 
     const response = await axios(axiosConfig);
-
+    const status = (response.status >= 200 && response.status < 300) ? 'SUCCESS' : 'FAILURE';
+    
     // Save history
+
     const history = new History({
       userId: req.user.id,
       method,
       url: req.body.url,
       statusCode: response.status,
+      status: status,
       headers: resolvedHeaders,
       body: resolvedBody,
+      responseSize: Buffer.byteLength(JSON.stringify(response.data), 'utf8')
     });
+
     await history.save();
 
     res.status(response.status).json(response.data);
